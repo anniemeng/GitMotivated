@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Incentivizes meaningful, regular git commits">
+    <title>Git Motivated</title>
+
+    <link rel="stylesheet" href="main.css">
+  </head>
+  <body>
+    <header>
+      <h1>Git Motivated<h1>
+      <h2>Make frequent, meaningful commits.</h2>
+    </header>
+    <p id="msg"></p>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script type="text/javascript">
+      $(function(){
+          var username = "anniemeng";
+          var user = 'https://api.github.com/users/' + username;
+          var userRepos = 'https://api.github.com/users/' + username + '/repos';
+          var userWatch = 'https://api.github.com/users/'+ username + '/subscriptions';
+
+          getJSON(user, function(json) {
+            if(json.message == "Not Found" || username == '') {
+              $('#msg').html("<h2>No user found</h2>");
+            }
+
+            else {
+              var name       = json.name;
+              var username   = json.login;
+              var aviurl     = json.avatar_url;
+              var profileurl = json.html_url;
+
+              if (name == undefined) {
+                name = username;
+              }
+
+              // user basics
+              var profile = '<h1>' + name + '</h1>';
+              profile = profile + '<h2>' + username + '</h2>'
+              $('#msg').html(profile);
+
+              var repoHTML;
+              var commitHTML;
+
+              // user's repos
+              var repositories;
+              $.getJSON(userRepos, function(json){
+                repositories = json;
+                repoInfo(repositories);
+              });
+
+              // user's contributed repos
+              var watchedRepo;
+              $.getJSON(userWatch, function(json){
+                watchedRepo = json;
+                repoInfo(watchedRepo);
+              });
+
+              // output repo name and commits
+              function repoInfo(repos) {
+                if (repos.length == 0) {
+                  repoHTML = repoHTML + '<p>No repos!</p>';
+                }
+
+                else {
+                  var commitHTML = '<p>Commits List:</p> <ul>';
+                  repoHTML = repoHTML + '<p>Repos List:</p> <ul>';
+
+                  // get repos
+                  $.each(repos, function(index) {
+                    var repoName = repos[index].name;
+                    repoHTML = repoHTML + '<li><a href="' + repos[index].html_url + '" target="_blank">' + repoName + '</a></li>';
+
+                    // get commit for repo
+                    commitUrl = 'https://api.github.com/repos/' + repos[index].owner['login'] + '/' + repos[index].name + '/commits?author=' + username;
+                    $.getJSON(commitUrl, function(json){
+                      var commits = json;
+                      if (commits.length != 0) {
+                        $.each(commits, function(index) {
+                          commitHTML = commitHTML + '<li><a href="'+commits[index].html_url+'" target="_blank">' + repoName + ': ' + commits[index].commit['message'] + '</a></li>';
+                        });
+                      }
+                    });
+                  });
+
+                  repoHTML = repoHTML + '</ul>';
+                  commitHTML = commitHTML + '</ul>';
+                }
+
+                $('#msg').append(repoHTML);
+                $('#msg').append(commitHTML);
+              }
+            }
+          });
+
+        function getJSON(url, callback) {
+          $.ajax({
+            url: url,
+            complete: function(xhr) {
+              callback.call(null, xhr.responseJSON);
+            }
+          });
+        }
+      });
+  </script>
+  </body>
+</html>
